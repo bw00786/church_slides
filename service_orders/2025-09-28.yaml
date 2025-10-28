@@ -1,0 +1,43 @@
+date: 2025-09-28
+theme: On the Water
+speaker: Pastor Megan
+
+order:
+  - type: countdown
+    title: 5 Minute Countdown
+  - type: song
+    title: Opening Praise
+  - type: text
+    title: Announcements
+  - type: children_message
+    title: Children’s Message
+    presenter: Pastor Megan
+  - type: liturgy
+    title: Call to Worship
+    content: |
+      Come to the water, all you who thirst, come drink deeply from the river of life...
+  - type: prayer
+    title: Opening Prayer
+    content: |
+      Almighty Creator, Lord of heaven and earth, we thank you for the gift of water...
+  - type: hymn
+    title: Hymn of Praise
+  - type: scripture
+    reference: Exodus 14:15-22
+    content: |
+      15 Then the Lord said to Moses, “Why are you crying out to me? ...
+  - type: sermon
+    title: Moses and the Red Sea
+    speaker: Pastor Megan
+  - type: communion
+    title: Holy Communion
+  - type: prayer
+    title: Lord’s Prayer
+  - type: prayer
+    title: Prayers for the Community
+  - type: offering
+    title: Offering with Doxology
+  - type: song
+    title: Closing Praise
+  - type: dismissal
+    title: Dismissal

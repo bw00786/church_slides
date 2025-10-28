@@ -1,0 +1,23 @@
+plan_service:
+  description: >
+    Read the service order file for {service_date} and extract each slide item.
+  expected_output: >
+    A structured list of slides with type, title, and text content.
+
+format_slides:
+  description: >
+    Format the text for each item in the service plan for readability on slides.
+  expected_output: >
+    A list of slides with text formatted for PowerPoint (no more than 6 lines per slide).
+
+design_slides:
+  description: >
+    Match each slide type to a background from {backgrounds_path}.
+  expected_output: >
+    The list of slides with assigned background file paths.
+
+generate_pptx:
+  description: >
+    Create a PowerPoint presentation based on the final slide list.
+  expected_output: >
+    A .pptx file saved in the output directory.

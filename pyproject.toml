@@ -1,0 +1,12 @@
+[project]
+name = "church_slides_project"
+version = "0.1.0"
+description = "Automated Church Service Slide Generator using CrewAI"
+authors = [{ name = "Bruce Wilkins" }]
+requires-python = ">=3.10"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+crewai = "*"
+python-pptx = "*"
+pyyaml = "*"

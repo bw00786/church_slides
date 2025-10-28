@@ -1,0 +1,58 @@
+date: 2025-10-12
+theme: Forgiveness
+speaker: Bruce Wilkins
+
+order:
+  - type: countdown
+    title: 5 Minute Countdown
+  - type: song
+    title: Opening Praise
+  - type: text
+    title: Announcements
+  - type: children_message
+    title: Children’s Message
+    presenter: Bruce Wilkins
+  - type: liturgy
+    title: Call to Worship
+    content: |
+      Leader: Come, all who are burdened by the weight of hurt, anger, or regret.
+      People: We come seeking the peace that only God can give.
+
+      Leader: Come, all who long to experience the freedom of forgiveness.
+      People: We come to be reminded of God’s boundless grace and love.
+
+      Leader: As Christ has forgiven us, so we are called to forgive one another.
+      People: With open hearts and willing spirits, we gather to worship the God of mercy and restoration.
+
+      Leader: Let us lay down our burdens and lift our voices in praise.
+      All: For in Christ, we are forgiven, set free, and made whole. Amen.
+  - type: prayer
+    title: Opening Prayer
+    content: |
+      Gracious and merciful God, we come before you with hearts open to your forgiveness. 
+      Teach us to forgive as you have forgiven us, and help us to extend grace to those who have wronged us. 
+      May your Spirit guide us in our worship today, leading us to deeper understanding and compassion. 
+      In Jesus' name, we pray. Amen.
+      
+  - type: hymn
+    title: Hymn of Praise
+    content: "Amazing Grace  (#378)"
+  - type: scripture
+    reference: Exodus 14:15-22
+    content: |
+      15 Then the Lord said to Moses, “Why are you crying out to me? ...
+  - type: sermon
+    title: Moses and the Red Sea
+    speaker: Bruce Wilkins
+  - type: communion
+    title: Holy Communion
+  - type: prayer
+    title: Lord’s Prayer
+  - type: prayer
+    title: Prayers for the Community
+  - type: offering
+    title: Offering with Doxology
+  - type: song
+    title: Closing Praise
+  - type: dismissal
+    title: Dismissal
