@@ -1,3 +1,4 @@
+
 import yaml
 import os
 import sys
@@ -35,9 +36,37 @@ def simple_convert(service_date):
     
     print(f"📋 Found {len(order_items)} items in service order")
     
+    # Check if we need to generate countdown video
+    countdown_video_path = None
+    if order_items and order_items[0].get('type') == 'countdown':
+        countdown_video_path = 'output/countdown.mp4'
+        
+        if not os.path.exists(countdown_video_path):
+            print(f"\n⏱️  Generating 5-minute countdown video...")
+            print(f"   This will take about 30 seconds...")
+            
+            import subprocess
+            try:
+                subprocess.run([
+                    'python', 'create_countdown.py',
+                    '--format', 'mp4',
+                    '--theme', theme,
+                    '--output', countdown_video_path
+                ], check=True, capture_output=True)
+                print(f"✅ Countdown video generated: {countdown_video_path}")
+            except subprocess.CalledProcessError as e:
+                print(f"⚠️ Could not generate countdown video: {e}")
+                print(f"   Video will need to be added manually")
+                countdown_video_path = None
+            except FileNotFoundError:
+                print(f"⚠️ create_countdown.py not found - skipping video generation")
+                countdown_video_path = None
+        else:
+            print(f"✅ Using existing countdown video: {countdown_video_path}")
+    
     # Convert YAML to slides
     slides = []
-    for item in order_items:
+    for idx, item in enumerate(order_items):
         slide_type = item.get('type', 'text')
         title = item.get('title', '')
         
@@ -77,12 +106,18 @@ def simple_convert(service_date):
         bg_file = bg_map.get(slide_type, 'general.jpg')
         bg_path = os.path.join(backgrounds_path, bg_file)
         
-        slides.append({
+        slide_data = {
             'type': slide_type,
             'title': title,
             'content': content,
             'background_path': bg_path
-        })
+        }
+        
+        # Add countdown video to first slide if it's a countdown type
+        if idx == 0 and slide_type == 'countdown' and countdown_video_path:
+            slide_data['countdown_video'] = countdown_video_path
+        
+        slides.append(slide_data)
         
         print(f"  ✓ Added slide: {title} ({slide_type})")
     
@@ -94,6 +129,23 @@ def simple_convert(service_date):
     print(f"\n🎬 Creating PowerPoint presentation...")
     result = create_powerpoint_manual(slides, output_path, backgrounds_path)
     print(result)
+    
+    # Display video setup instructions if countdown video exists
+    if countdown_video_path and os.path.exists(countdown_video_path):
+        print(f"\n" + "="*70)
+        print("🎥 COUNTDOWN VIDEO SETUP")
+        print("="*70)
+        print(f"\n✅ Video has been added to slide 1!")
+        print(f"\n📍 To make it auto-play:")
+        print(f"   1. Open the PowerPoint file")
+        print(f"   2. Click on the video in slide 1")
+        print(f"   3. Go to 'Playback' tab")
+        print(f"   4. Change 'Start' to 'Automatically'")
+        print(f"   5. (Optional) Check 'Play Full Screen'")
+        print(f"   6. Save the file")
+        print(f"\n📖 See setup_countdown_autoplay.md for detailed instructions")
+        print("="*70)
+    
     print(f"\n✅ Done! Open your presentation: {output_path}")
 
 if __name__ == "__main__":

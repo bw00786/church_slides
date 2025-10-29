@@ -1,13 +1,3 @@
-#!/usr/bin/env python3
-"""
-Generate a 5-minute countdown video for church service slides.
-Can create either MP4 video or animated GIF.
-
-Usage:
-    python create_countdown.py --format mp4 --theme forgiveness
-    python create_countdown.py --format gif --duration 300
-"""
-
 import os
 import argparse
 from PIL import Image, ImageDraw, ImageFont
@@ -99,15 +89,16 @@ def create_countdown_frame(minutes, seconds, width=1920, height=1080,
 
 def create_countdown_video(duration=300, output_path="output/countdown.mp4", 
                           theme_path="backgrounds/forgiveness/countdown.jpg",
-                          fps=30):
+                          fps=30, audio_path=None):
     """
-    Create a countdown video using ffmpeg.
+    Create a countdown video using ffmpeg with optional background music.
     
     Args:
         duration: Countdown duration in seconds (default 300 = 5 minutes)
         output_path: Where to save the video
         theme_path: Path to background image for color extraction
         fps: Frames per second (30 recommended)
+        audio_path: Path to background audio file (mp3, wav, etc.)
     """
     
     if not check_ffmpeg():

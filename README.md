@@ -98,7 +98,7 @@ ollama pull gemma3
 - Install and run
 - Execute: `ollama pull gemma3`
 
-### Step 5: Create Required Directories
+### Step 6: Create Required Directories
 
 ```bash
 mkdir -p service_orders backgrounds/default output
@@ -137,7 +137,38 @@ python simple_convert.py 2025-10-12
 
 ## Usage
 
-### 1. Generate Background Images
+### 1. Generate Countdown Video (NEW!)
+
+Create a professional 5-minute countdown timer with optional calming music:
+
+```bash
+# Generate MP4 countdown (recommended)
+python create_countdown.py --format mp4 --theme forgiveness
+
+# With background music
+python create_countdown.py --format mp4 --audio audio/countdown_music.mp3
+
+# Custom duration (3 minutes) with music
+python create_countdown.py --format mp4 --duration 180 --audio path/to/music.mp3
+
+# Generate as animated GIF (Warning: large file size)
+python create_countdown.py --format gif
+
+# Generate individual images (one per second)
+python create_countdown.py --format images --output output/countdown_slides
+```
+
+**Adding Music:**
+1. Download royalty-free music (see `AUDIO_SETUP.md` for sources)
+2. Place at `audio/countdown_music.mp3` for automatic use
+3. Or specify with `--audio` flag
+
+**Output:**
+- MP4 video: `output/countdown.mp4` (~5-10MB for 5 minutes)
+- Theme-aware colors matching your backgrounds
+- 1920x1080 resolution at 30fps
+- Professional gradient background with rounded text box
+- Optional: Calming background music
 
 Create themed backgrounds for your slides:
 
@@ -155,6 +186,8 @@ python generate_backgrounds.py christmas --opacity 150 --radius 40
 ```
 
 This creates images in `backgrounds/themename/`:
+
+### 2. Generate Background Images
 - countdown.jpg
 - song.jpg
 - hymn.jpg
@@ -167,7 +200,7 @@ This creates images in `backgrounds/themename/`:
 - liturgy.jpg
 - general.jpg
 
-### 2. Create Service Order YAML
+### 3. Create Service Order YAML
 
 #### Format Example
 
@@ -217,15 +250,34 @@ order:
     title: Dismissal
 ```
 
-### 3. Generate PowerPoint
+### 4. Generate PowerPoint
 
+**Option A: With automatic countdown video (recommended)**
 ```bash
 python simple_convert.py 2025-06-22
 ```
 
+**Option B: Without countdown video**
+```bash
+python simple_convert.py 2025-06-22 --no-countdown
+```
+
 Output will be saved to: `output/2025-06-22_themename_ServiceSlides.pptx`
 
-### 4. Convert Word Document to YAML
+**What happens:**
+1. Reads your YAML service order
+2. If first slide is type `countdown`, generates a 5-minute video
+3. Creates PowerPoint with all slides
+4. Countdown video is ready to be inserted in slide 1
+
+**Manual video insertion:**
+1. Open your PowerPoint
+2. Go to slide 1 (countdown slide)
+3. Insert > Video > Video on My PC...
+4. Select `output/countdown.mp4`
+5. Right-click video > Set to play automatically
+
+### 5. Convert Word Document to YAML
 
 ```bash
 python word_to_yaml.py "Service_June_22.docx"
@@ -286,6 +338,7 @@ church-slides/
 │       └── pptx_creator_tool.py      # PowerPoint creation
 │
 ├── simple_convert.py                 # Direct YAML→PPTX (recommended)
+├── create_countdown.py               # Countdown video generator (NEW!)
 ├── test_text_to_yaml_fixed.py        # Test parser without Word doc
 ├── word_to_yaml.py                   # Word→YAML converter
 ├── generate_backgrounds.py           # Background generator
@@ -355,6 +408,23 @@ Edit `src/tools/pptx_creator_tool.py` to customize:
 
 ## Troubleshooting
 
+### "ffmpeg not found"
+
+```bash
+# Install ffmpeg
+# macOS:
+brew install ffmpeg
+
+# Linux:
+sudo apt-get install ffmpeg
+
+# Windows:
+# Download from https://ffmpeg.org and add to PATH
+
+# Verify:
+ffmpeg -version
+```
+
 ### "module yaml not found"
 
 ```bash
@@ -404,6 +474,19 @@ ollama list
 ollama pull gemma3
 ```
 
+### Countdown video file too large
+
+```bash
+# Reduce quality (smaller file)
+python create_countdown.py --format mp4 --fps 24
+
+# Use shorter duration
+python create_countdown.py --format mp4 --duration 180
+
+# Or use individual images instead
+python create_countdown.py --format images
+```
+
 ### Font Issues (Background Generation)
 
 The script tries multiple font paths. If Arial isn't found:
@@ -412,6 +495,32 @@ The script tries multiple font paths. If Arial isn't found:
 - **Windows**: Arial included by default
 
 ## Workflows
+
+### Complete Workflow (Recommended)
+
+```bash
+# 1. Generate backgrounds for your theme
+python generate_backgrounds.py forgiveness
+
+# 2. Generate countdown video
+python create_countdown.py --format mp4 --theme forgiveness
+
+# 3. Convert Word doc to YAML or use existing YAML
+python word_to_yaml.py service.docx
+
+# 4. Generate slides
+python simple_convert.py 2025-06-22
+
+# 5. Open and present!
+open output/2025-06-22_forgiveness_ServiceSlides.pptx
+```
+
+### Quick Workflow (Skip Countdown)
+
+```bash
+python word_to_yaml.py service.docx
+python simple_convert.py 2025-06-22 --no-countdown
+```
 
 ### Recommended: Direct Conversion (No AI)
 

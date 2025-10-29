@@ -1,3 +1,4 @@
+
 from crewai.tools import tool
 from pptx import Presentation
 from pptx.util import Inches, Pt
@@ -21,6 +22,7 @@ def create_service_slides() -> str:
 def create_powerpoint_manual(slides_data, output_path, theme_backgrounds_path=None):
     """
     Manual function to create PowerPoint - call this directly from your code
+    Now with automatic countdown video embedding!
     """
     print("🚀 Manual PowerPoint Creation Started")
     print(f"📝 Output path: {output_path}")
@@ -56,6 +58,7 @@ def create_powerpoint_manual(slides_data, output_path, theme_backgrounds_path=No
             slide = prs.slides.add_slide(prs.slide_layouts[6])
             title = slide_info.get("title", f"Slide {i+1}")
             bg_path = slide_info.get("background_path", "")
+            slide_type = slide_info.get("type", "")
             
             print(f"🖼️ Slide {i+1}: '{title}' - Background path: {bg_path}")
             
@@ -63,31 +66,23 @@ def create_powerpoint_manual(slides_data, output_path, theme_backgrounds_path=No
             background_used = False
             
             if bg_path:
-                # Try multiple path resolution strategies
                 possible_paths = []
-                
-                # 1. Original path as provided
                 possible_paths.append(bg_path)
                 
-                # 2. If it's just a filename, try to construct full path
                 if "/" not in bg_path and "\\" not in bg_path:
                     if theme_backgrounds_path:
                         possible_paths.append(os.path.join(theme_backgrounds_path, bg_path))
                     possible_paths.append(os.path.join("backgrounds", "forgiveness", bg_path))
                     possible_paths.append(os.path.join(os.getcwd(), "backgrounds", "forgiveness", bg_path))
                 
-                # 3. Try with different separators
                 possible_paths.append(bg_path.replace("/", "\\"))
                 possible_paths.append(bg_path.replace("\\", "/"))
                 
-                # 4. Try absolute path construction
                 if theme_backgrounds_path and not os.path.isabs(bg_path):
                     possible_paths.append(os.path.join(theme_backgrounds_path, bg_path))
                     possible_paths.append(os.path.join(os.getcwd(), theme_backgrounds_path, bg_path))
                 
-                # Remove duplicates and try each path
                 for test_path in set(possible_paths):
-                    # Normalize the path
                     test_path = os.path.normpath(test_path)
                     
                     if os.path.exists(test_path):
@@ -99,19 +94,50 @@ def create_powerpoint_manual(slides_data, output_path, theme_backgrounds_path=No
                         except Exception as e:
                             print(f"⚠️ Slide {i+1}: Error loading background {test_path}: {e}")
                             continue
-                    else:
-                        print(f"🔍 Slide {i+1}: Path not found: {test_path}")
                 
                 if not background_used:
                     print(f"❌ Slide {i+1}: '{title}' - No background found after trying {len(set(possible_paths))} paths")
             
-            # Fallback background - create colored background
+            # Fallback background
             if not background_used:
                 print(f"🎨 Slide {i+1}: Using fallback blue background")
                 background = slide.background
                 fill = background.fill
                 fill.solid()
-                fill.fore_color.rgb = RGBColor(0, 32, 96)  # Dark blue
+                fill.fore_color.rgb = RGBColor(0, 32, 96)
+            
+            # --- AUTO-EMBED COUNTDOWN VIDEO ON FIRST SLIDE ---
+            if i == 0 and slide_type == 'countdown':
+                # Look for countdown video
+                countdown_video_path = slide_info.get('countdown_video')
+                
+                if not countdown_video_path:
+                    # Check default location
+                    countdown_video_path = 'output/countdown.mp4'
+                
+                if countdown_video_path and os.path.exists(countdown_video_path):
+                    try:
+                        # Embed video in the center of the slide
+                        video_width = Inches(10)
+                        video_height = Inches(5.625)  # 16:9 aspect ratio
+                        video_left = (slide_width - video_width) / 2
+                        video_top = (slide_height - video_height) / 2
+                        
+                        # Add video to slide
+                        movie = slide.shapes.add_movie(
+                            countdown_video_path,
+                            video_left, video_top,
+                            video_width, video_height
+                        )
+                        
+                        print(f"🎬 Slide {i+1}: Countdown video EMBEDDED from {countdown_video_path}")
+                        print(f"   ⚠️ Note: Video will need to be set to auto-play in PowerPoint")
+                        
+                    except Exception as e:
+                        print(f"⚠️ Slide {i+1}: Could not embed video: {e}")
+                        print(f"   You can manually insert: {countdown_video_path}")
+                else:
+                    print(f"⚠️ Slide {i+1}: Countdown video not found at {countdown_video_path}")
             
             # --- Text content area ---
             content_width = Inches(9)
@@ -119,60 +145,64 @@ def create_powerpoint_manual(slides_data, output_path, theme_backgrounds_path=No
             content_left = (slide_width - content_width) / 2
             content_top = (slide_height - content_height) / 2
             
-            # Translucent background for text
-            rect = slide.shapes.add_shape(
-                MSO_SHAPE.ROUNDED_RECTANGLE,
-                content_left, content_top, content_width, content_height
-            )
-            fill = rect.fill
-            fill.solid()
-            fill.fore_color.rgb = RGBColor(0, 0, 0)
-            fill.transparency = 0.3
-            rect.line.fill.background()
-            
-            # Text box
-            text_margin = Inches(0.3)
-            textbox = slide.shapes.add_textbox(
-                content_left + text_margin,
-                content_top + text_margin,
-                content_width - (text_margin * 2),
-                content_height - (text_margin * 2)
-            )
-            text_frame = textbox.text_frame
-            text_frame.word_wrap = True
-            text_frame.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
-            
-            # Title
-            p_title = text_frame.add_paragraph()
-            p_title.text = str(title)
-            p_title.font.bold = True
-            p_title.font.size = Pt(36)
-            p_title.font.color.rgb = RGBColor(255, 255, 255)
-            p_title.alignment = PP_ALIGN.CENTER
-            
-            # Content
+            # Only add text content if there's content or it's not a countdown slide
             content = slide_info.get("content", "")
-            if content:
-                # Add spacing after title
-                p_spacing = text_frame.add_paragraph()
-                p_spacing.text = ""
-                p_spacing.font.size = Pt(8)
+            if content or slide_type != 'countdown':
+                # Translucent background for text
+                rect = slide.shapes.add_shape(
+                    MSO_SHAPE.ROUNDED_RECTANGLE,
+                    content_left, content_top, content_width, content_height
+                )
+                fill = rect.fill
+                fill.solid()
+                fill.fore_color.rgb = RGBColor(0, 0, 0)
+                fill.transparency = 0.3
+                rect.line.fill.background()
                 
-                # Process content lines
-                content_lines = str(content).split("\n")
-                for line in content_lines:
-                    if line.strip():
-                        p = text_frame.add_paragraph()
-                        p.text = line.strip()
-                        p.font.size = Pt(24)
-                        p.font.color.rgb = RGBColor(240, 240, 240)
-                        p.alignment = PP_ALIGN.CENTER
+                # Text box
+                text_margin = Inches(0.3)
+                textbox = slide.shapes.add_textbox(
+                    content_left + text_margin,
+                    content_top + text_margin,
+                    content_width - (text_margin * 2),
+                    content_height - (text_margin * 2)
+                )
+                text_frame = textbox.text_frame
+                text_frame.word_wrap = True
+                text_frame.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
+                
+                # Title
+                p_title = text_frame.add_paragraph()
+                p_title.text = str(title)
+                p_title.font.bold = True
+                p_title.font.size = Pt(36)
+                p_title.font.color.rgb = RGBColor(255, 255, 255)
+                p_title.alignment = PP_ALIGN.CENTER
+                
+                # Content
+                if content:
+                    # Add spacing after title
+                    p_spacing = text_frame.add_paragraph()
+                    p_spacing.text = ""
+                    p_spacing.font.size = Pt(8)
+                    
+                    # Process content lines
+                    content_lines = str(content).split("\n")
+                    for line in content_lines:
+                        if line.strip():
+                            p = text_frame.add_paragraph()
+                            p.text = line.strip()
+                            p.font.size = Pt(24)
+                            p.font.color.rgb = RGBColor(240, 240, 240)
+                            p.alignment = PP_ALIGN.CENTER
             
             successful_slides += 1
             print(f"✅ Successfully created slide {i+1}: {title}")
             
         except Exception as e:
             print(f"❌ Error creating slide {i+1}: {e}")
+            import traceback
+            traceback.print_exc()
             continue
     
     # Save the presentation
@@ -193,18 +223,14 @@ def execute_powerpoint_creation(design_task_output, output_path, theme_backgroun
     print("🎯 Direct PowerPoint Execution")
     print(f"🎨 Using backgrounds from: {theme_backgrounds_path}")
     
-    # Extract slides data from design task output
     slides_data = None
     
-    # Try to extract from different possible formats
     if hasattr(design_task_output, 'raw'):
-        # CrewAI task output
         raw_output = design_task_output.raw
         if isinstance(raw_output, str):
             try:
                 slides_data = json.loads(raw_output)
             except:
-                # Try to find JSON in the string
                 import re
                 json_match = re.search(r'\[.*\]', raw_output, re.DOTALL)
                 if json_match:
@@ -221,11 +247,9 @@ def execute_powerpoint_creation(design_task_output, output_path, theme_backgroun
     
     print(f"📊 Found {len(slides_data)} slides in design output")
     
-    # Fix background paths if they're just filenames
     for slide in slides_data:
         if 'background_path' in slide:
             bg_path = slide['background_path']
-            # If it's just a filename without path, construct the full path
             if bg_path and '/' not in bg_path and '\\' not in bg_path:
                 new_path = os.path.join(theme_backgrounds_path, bg_path)
                 print(f"🔄 Fixed background path: '{bg_path}' -> '{new_path}'")
