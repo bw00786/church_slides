@@ -1,7 +1,7 @@
 import os
 import json
 from src.tools.pptx_creator_tool import execute_powerpoint_creation
-from crew import build_crew
+from service_crew import build_crew
 
 def manual_powerpoint_creation(service_date: str):
     """

@@ -2,8 +2,8 @@ import argparse
 import yaml
 import os
 import json
-from crew import build_crew
-from src.tools.pptx_creator_tool import create_service_slides
+from .service_crew import build_crew
+from .tools.pptx_creator_tool import create_service_slides
 
 
 def recursive_date_to_str(data):

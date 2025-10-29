@@ -28,10 +28,24 @@ def create_slide_image(text, color_top, color_bottom, save_path, opacity=130, ra
         b = int(color_top[2] * (1 - ratio) + color_bottom[2] * ratio)
         draw.line([(0, i), (width, i)], fill=(r, g, b))
 
-    # Load font
-    try:
-        font = ImageFont.truetype("arial.ttf", 80)
-    except:
+    # Load font - try multiple common font locations
+    font = None
+    font_paths = [
+        "/System/Library/Fonts/Supplemental/Arial.ttf",  # Mac
+        "/Library/Fonts/Arial.ttf",  # Mac alternative
+        "arial.ttf",  # Windows
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # Linux
+    ]
+    
+    for font_path in font_paths:
+        try:
+            font = ImageFont.truetype(font_path, 80)
+            break
+        except:
+            continue
+    
+    if font is None:
+        print("⚠️ Using default font (Arial not found)")
         font = ImageFont.load_default()
 
     # Text size
@@ -66,7 +80,8 @@ def create_slide_image(text, color_top, color_bottom, save_path, opacity=130, ra
 
 
 def generate_backgrounds(theme_name, color_map, opacity, radius):
-    base = r"C:\Users\Lis30\Documents\church_slides\backgrounds"
+    # Use relative path from current directory
+    base = os.path.join(os.getcwd(), "backgrounds")
     folder = os.path.join(base, theme_name)
     os.makedirs(folder, exist_ok=True)
 
@@ -74,9 +89,15 @@ def generate_backgrounds(theme_name, color_map, opacity, radius):
         print("⚠️ No colors provided; using default set.")
         color_map = {
             "countdown": ((0, 120, 200), (0, 60, 130)),
+            "song": ((120, 80, 200), (60, 40, 130)),
+            "hymn": ((150, 100, 180), (80, 50, 100)),
             "scripture": ((150, 210, 210), (60, 120, 120)),
             "sermon": ((0, 80, 120), (0, 40, 70)),
             "prayer": ((50, 150, 180), (20, 80, 100)),
+            "communion": ((100, 50, 50), (60, 30, 30)),
+            "offering": ((200, 150, 50), (120, 90, 30)),
+            "children": ((255, 200, 100), (200, 150, 50)),
+            "liturgy": ((100, 100, 150), (50, 50, 100)),
             "general": ((100, 130, 160), (40, 60, 80)),
         }
 
