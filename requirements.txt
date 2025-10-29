@@ -1,12 +1,38 @@
-# Core dependencies
+# Church Slides Generator - Complete Requirements
+# Based on actual imports from all application files
+
+# CrewAI Framework and Tools
 crewai>=0.28.0
-pyyaml>=6.0
+crewai-tools>=0.1.0
+
+# YAML Processing
+PyYAML>=6.0.0
+
+# PowerPoint Generation
 python-pptx>=0.6.21
+
+# Image Processing
 Pillow>=10.0.0
 
-# Ollama/LLM support
-# Note: You'll need to install Ollama separately and have the gemma3 model available
-# Visit https://ollama.ai for installation instructions
+# LLM Support
+litellm>=1.0.0
 
-# Optional but recommended
-argparse  # Usually included in Python standard library
+# Document Processing (Word documents)
+mammoth>=1.6.0
+
+# HTTP Requests
+requests>=2.31.0
+
+# Data Validation
+pydantic>=2.0.0
+
+# Environment Variables (optional but recommended)
+python-dotenv>=1.0.0
+
+# Note: The following are Python standard library modules (no pip install needed):
+# - os
+# - sys
+# - json
+# - argparse
+# - re
+# - datetime
