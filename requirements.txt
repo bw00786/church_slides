@@ -1,0 +1,12 @@
+# Core dependencies
+crewai>=0.28.0
+pyyaml>=6.0
+python-pptx>=0.6.21
+Pillow>=10.0.0
+
+# Ollama/LLM support
+# Note: You'll need to install Ollama separately and have the gemma3 model available
+# Visit https://ollama.ai for installation instructions
+
+# Optional but recommended
+argparse  # Usually included in Python standard library

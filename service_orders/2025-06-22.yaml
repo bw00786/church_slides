@@ -1,0 +1,56 @@
+date: 2025-06-22
+theme: Disciples Making Disciples
+speaker: Pastor Megan
+
+order:
+  - type: countdown
+    title: 5 Minute Countdown (Regular)
+  - type: song
+    title: Opening Praise
+  - type: text
+    title: And All The People Said Amen
+  - type: text
+    title: Announcements
+  - type: sermon
+    title: Children’s Message
+    presenter: Pastor Megan
+  - type: song
+    title: Call to Worship
+    content: |
+      L: We are called to be God’s children.
+      P: God’s love has been poured on us through Jesus Christ!
+      L: Fear and doubt are gone!
+      P: Joy and Celebration ring in our hearts!
+      L: Come, let us raise our voices in song!
+      P: Let us offer our hearts and souls to God in prayer and praise. AMEN.
+  - type: prayer
+    title: Opening Prayer
+    content: |
+      Lord of Light and Mercy, be with us this day as we again hear the stories of faith and sight. Help us to believe in your abiding presence with us, both in our darkness and in the light which you bring. Give us courage and strength to witness to your resurrection. For we offer this in Jesus’ Name, AMEN.
+  - type: hymn
+    title: Hymn of Praise
+    content: "#399 Take My Life and Let it Be"
+  - type: scripture
+    title: Scripture: Acts 3:11-19
+    reference: Acts 3:11-19
+    content: |
+      11 While the man held on to Peter and John, all the people were astonished and came running to them in the place called Solomon’s Colonnade. 12 When Peter saw this, he said to them: “Fellow Israelites, why does this surprise you? Why do you stare at us as if by our own power or godliness we had made this man walk? 13 The God of Abraham, Isaac and Jacob, the God of our fathers, has glorified his servant Jesus. You handed him over to be killed, and you disowned him before Pilate, though he had decided to let him go. 14 You disowned the Holy and Righteous One and asked that a murderer be released to you. 15 You killed the author of life, but God raised him from the dead. We are witnesses of this. 16 By faith in the name of Jesus, this man whom you see and know was made strong. It is Jesus’ name and the faith that comes through him that has completely healed him, as you can all see.
+      17 “Now, fellow Israelites, I know that you acted in ignorance, as did your leaders. 18 But this is how God fulfilled what he had foretold through all the prophets, saying that his Messiah would suffer. 19 Repent, then, and turn to God, so that your sins may be wiped out, that times of refreshing may come from the Lord,
+  - type: sermon
+    title: Sermon
+  - type: text
+    title: Pastor Megan
+  - type: communion
+    title: Holy Communion
+  - type: prayer
+    title: Lord’s Prayer
+  - type: prayer
+    title: Prayers for the Community
+  - type: offering
+    title: Offering with Doxology
+  - type: song
+    title: Closing Praise
+  - type: text
+    title: My Lighthouse
+  - type: dismissal
+    title: Dismissal
