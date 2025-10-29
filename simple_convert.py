@@ -1,10 +1,36 @@
 import yaml
 import os
 import sys
+import subprocess
 from src.tools.pptx_creator_tool import create_powerpoint_manual
 
-def simple_convert(service_date):
-    """Direct YAML to PowerPoint conversion without AI agents"""
+def generate_countdown_video(theme, output_path="output/countdown.mp4"):
+    """Generate countdown video if it doesn't exist"""
+    if os.path.exists(output_path):
+        print(f"⏱️  Using existing countdown: {output_path}")
+        return output_path
+    
+    print(f"⏱️  Generating countdown video...")
+    theme_bg = f"backgrounds/{theme}/countdown.jpg"
+    
+    # Call the countdown generator
+    cmd = [
+        "python", "create_countdown.py",
+        "--format", "mp4",
+        "--duration", "300",
+        "--theme", theme,
+        "--output", output_path
+    ]
+    
+    try:
+        subprocess.run(cmd, check=True)
+        return output_path
+    except subprocess.CalledProcessError:
+        print("⚠️  Could not generate countdown video, skipping...")
+        return None
+
+def simple_convert(service_date, include_countdown=True):
+    """Direct YAML to PowerPoint conversion with optional countdown"""
     
     # Load YAML
     yaml_path = f"service_orders/{service_date}.yaml"
@@ -25,38 +51,27 @@ def simple_convert(service_date):
     
     print(f"🎨 Using backgrounds: {backgrounds_path}")
     
-    # Convert YAML to slides - handle both 'order' and 'service_order' keys
+    # Generate countdown video if first slide is countdown type
+    countdown_video_path = None
     order_items = data.get('order', data.get('service_order', []))
     
-    if not order_items:
-        print("❌ No service order found in YAML file!")
-        print("   Looking for 'order:' or 'service_order:' key")
-        return
-    
-    print(f"📋 Found {len(order_items)} items in service order")
+    if order_items and include_countdown:
+        first_item = order_items[0]
+        if first_item.get('type') == 'countdown':
+            countdown_video_path = generate_countdown_video(theme)
     
     # Convert YAML to slides
     slides = []
-    for item in order_items:
+    for idx, item in enumerate(order_items):
         slide_type = item.get('type', 'text')
         title = item.get('title', '')
-        
-        # Get content - could be 'content' or 'reference' for scripture
         content = item.get('content', '')
-        if not content and 'reference' in item:
-            content = item.get('reference', '')
         
-        # Add speaker/presenter info if present
+        # Add speaker/presenter info
         if 'speaker' in item:
-            if content:
-                content += f"\n\nSpeaker: {item['speaker']}"
-            else:
-                content = f"Speaker: {item['speaker']}"
+            content = f"{content}\n\nSpeaker: {item['speaker']}" if content else f"Speaker: {item['speaker']}"
         elif 'presenter' in item:
-            if content:
-                content += f"\n\nPresenter: {item['presenter']}"
-            else:
-                content = f"Presenter: {item['presenter']}"
+            content = f"{content}\n\nPresenter: {item['presenter']}" if content else f"Presenter: {item['presenter']}"
         
         # Map slide type to background
         bg_map = {
@@ -77,13 +92,18 @@ def simple_convert(service_date):
         bg_file = bg_map.get(slide_type, 'general.jpg')
         bg_path = os.path.join(backgrounds_path, bg_file)
         
-        slides.append({
+        slide_data = {
             'type': slide_type,
             'title': title,
             'content': content,
             'background_path': bg_path
-        })
+        }
         
+        # Add countdown video path to first slide if available
+        if idx == 0 and countdown_video_path:
+            slide_data['countdown_video'] = countdown_video_path
+        
+        slides.append(slide_data)
         print(f"  ✓ Added slide: {title} ({slide_type})")
     
     # Create PowerPoint
@@ -94,8 +114,19 @@ def simple_convert(service_date):
     print(f"\n🎬 Creating PowerPoint presentation...")
     result = create_powerpoint_manual(slides, output_path, backgrounds_path)
     print(result)
+    
+    if countdown_video_path:
+        print(f"\n💡 Note: Countdown video created at {countdown_video_path}")
+        print(f"   It will be embedded in the first slide of your presentation")
+    
     print(f"\n✅ Done! Open your presentation: {output_path}")
 
 if __name__ == "__main__":
-    date = sys.argv[1] if len(sys.argv) > 1 else "2025-10-12"
-    simple_convert(date)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('service_date', help='Service date (YYYY-MM-DD)')
+    parser.add_argument('--no-countdown', action='store_true', 
+                       help='Skip countdown video generation')
+    args = parser.parse_args()
+    
+    simple_convert(args.service_date, include_countdown=not args.no_countdown)

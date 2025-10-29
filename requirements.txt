@@ -36,3 +36,27 @@ python-dotenv>=1.0.0
 # - argparse
 # - re
 # - datetime
+# - subprocess
+# - shutil
+
+# ============================================================
+# EXTERNAL SYSTEM REQUIREMENTS (not pip installable)
+# ============================================================
+#
+# 1. ffmpeg (REQUIRED for countdown video generation)
+#    - macOS: brew install ffmpeg
+#    - Linux: sudo apt-get install ffmpeg
+#    - Windows: Download from https://ffmpeg.org/download.html
+#    - Verify: ffmpeg -version
+#
+# 2. Ollama (OPTIONAL - only needed for AI agent workflow)
+#    - macOS: brew install ollama
+#    - Linux: curl -fsSL https://ollama.com/install.sh | sh
+#    - Windows: Download from https://ollama.ai
+#    - After install: ollama pull gemma3
+#    - Verify: ollama list
+#
+# 3. System Fonts (for background generation)
+#    - macOS: Usually includes Arial at /System/Library/Fonts/Supplemental/
+#    - Linux: sudo apt-get install ttf-mscorefonts-installer
+#    - Windows: Arial included by default

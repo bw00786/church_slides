@@ -54,7 +54,28 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### Step 4: Install Ollama (Optional - for AI agents)
+### Step 4: Install ffmpeg (Required for countdown videos)
+
+**macOS:**
+```bash
+brew install ffmpeg
+```
+
+**Linux:**
+```bash
+sudo apt-get install ffmpeg
+```
+
+**Windows:**
+- Download from [https://ffmpeg.org/download.html](https://ffmpeg.org/download.html)
+- Add to PATH
+
+**Verify installation:**
+```bash
+ffmpeg -version
+```
+
+### Step 5: Install Ollama (Optional - for AI agents)
 
 Only needed if you want to use the AI agent workflow (`src/main.py`).
 
