@@ -1,4 +1,3 @@
-
 import yaml
 import os
 import sys
@@ -75,17 +74,37 @@ def simple_convert(service_date):
         if not content and 'reference' in item:
             content = item.get('reference', '')
         
-        # Add speaker/presenter info if present
-        if 'speaker' in item:
+        # Special handling for SERMON slides
+        if slide_type == 'sermon':
+            # Build sermon slide content
+            sermon_parts = []
+            
+            # Add the sermon title
+            if title:
+                sermon_parts.append(title)
+            
+            # Add speaker information
+            if 'speaker' in item:
+                sermon_parts.append("")  # Blank line
+                sermon_parts.append(item['speaker'])
+            elif 'presenter' in item:
+                sermon_parts.append("")  # Blank line
+                sermon_parts.append(item['presenter'])
+            
+            # Combine into content
+            content = '\n'.join(sermon_parts)
+            
+            # Use "Sermon" as the title for the slide (displays at top)
+            title = "Sermon"
+        
+        # Handle other slide types with speaker/presenter info
+        elif 'speaker' in item or 'presenter' in item:
+            presenter_name = item.get('speaker') or item.get('presenter')
+            
             if content:
-                content += f"\n\nSpeaker: {item['speaker']}"
+                content += f"\n\n{presenter_name}"
             else:
-                content = f"Speaker: {item['speaker']}"
-        elif 'presenter' in item:
-            if content:
-                content += f"\n\nPresenter: {item['presenter']}"
-            else:
-                content = f"Presenter: {item['presenter']}"
+                content = presenter_name
         
         # Map slide type to background
         bg_map = {
@@ -119,7 +138,11 @@ def simple_convert(service_date):
         
         slides.append(slide_data)
         
-        print(f"  ✓ Added slide: {title} ({slide_type})")
+        # Enhanced logging for sermon slides
+        if slide_type == 'sermon':
+            print(f"  ✓ Added slide: Sermon - {item.get('title', 'Untitled')} ({slide_type})")
+        else:
+            print(f"  ✓ Added slide: {title} ({slide_type})")
     
     # Create PowerPoint
     theme_clean = theme.replace('_', '')

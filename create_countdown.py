@@ -10,8 +10,10 @@ def check_ffmpeg():
 
 def create_countdown_frame(minutes, seconds, width=1920, height=1080, 
                           bg_color_top=(0, 120, 200), bg_color_bottom=(0, 60, 130),
-                          text_color=(255, 255, 255)):
-    """Create a single countdown frame"""
+                          text_color=(255, 255, 255),
+                          church_name="Vernon United Methodist Church",
+                          logo_path=None):
+    """Create a single countdown frame with church branding"""
     
     # Create gradient background
     img = Image.new("RGB", (width, height), bg_color_top)
@@ -27,27 +29,71 @@ def create_countdown_frame(minutes, seconds, width=1920, height=1080,
     
     # Load fonts
     try:
-        # Try to load a large font for the timer
         timer_font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 200)
         label_font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 60)
+        church_font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 72)
     except:
         try:
             timer_font = ImageFont.truetype("arial.ttf", 200)
             label_font = ImageFont.truetype("arial.ttf", 60)
+            church_font = ImageFont.truetype("arial.ttf", 72)
         except:
             print("⚠️ Using default font (Arial not found)")
             timer_font = ImageFont.load_default()
             label_font = ImageFont.load_default()
+            church_font = ImageFont.load_default()
     
     # Format time string
     time_str = f"{minutes:02d}:{seconds:02d}"
     
-    # Draw translucent rounded rectangle behind text
+    # Convert to RGBA for transparency effects
     img_rgba = img.convert("RGBA")
+    draw = ImageDraw.Draw(img_rgba)
+    
+    # --- Add Church Logo (top center) ---
+    logo_bottom_y = 80  # Track where logo ends
+    if logo_path and os.path.exists(logo_path):
+        try:
+            logo = Image.open(logo_path)
+            # Resize logo to reasonable size (max 250px wide)
+            logo_max_width = 250
+            logo_aspect = logo.height / logo.width
+            if logo.width > logo_max_width:
+                logo = logo.resize((logo_max_width, int(logo_max_width * logo_aspect)), Image.Resampling.LANCZOS)
+            
+            # Convert logo to RGBA if not already
+            if logo.mode != 'RGBA':
+                logo = logo.convert('RGBA')
+            
+            # Position logo at top center
+            logo_x = (width - logo.width) // 2
+            logo_y = 80
+            logo_bottom_y = logo_y + logo.height
+            
+            # Paste logo
+            img_rgba.paste(logo, (logo_x, logo_y), logo)
+            draw = ImageDraw.Draw(img_rgba)  # Refresh draw object
+            
+        except Exception as e:
+            print(f"   ⚠️ Could not load logo: {e}")
+    
+    # --- Draw Church Name (below logo or at top) ---
+    church_y = logo_bottom_y + 30  # Position below logo
+    if church_name:
+        church_bbox = draw.textbbox((0, 0), church_name, font=church_font)
+        church_width = church_bbox[2] - church_bbox[0]
+        church_x = (width - church_width) // 2
+        
+        # Draw church name with shadow
+        draw.text((church_x + 3, church_y + 3), church_name, fill=(0, 0, 0, 180), font=church_font)
+        draw.text((church_x, church_y), church_name, fill=text_color + (255,), font=church_font)
+    
+    # --- Draw countdown section (center of screen) ---
+    # Draw translucent rounded rectangle behind countdown
     overlay = Image.new("RGBA", img_rgba.size, (0, 0, 0, 0))
     overlay_draw = ImageDraw.Draw(overlay)
     
-    # Calculate text size
+    # Calculate countdown box position (center of screen)
     timer_bbox = draw.textbbox((0, 0), time_str, font=timer_font)
     timer_width = timer_bbox[2] - timer_bbox[0]
     timer_height = timer_bbox[3] - timer_bbox[1]
@@ -56,14 +102,12 @@ def create_countdown_frame(minutes, seconds, width=1920, height=1080,
     label_bbox = draw.textbbox((0, 0), label_text, font=label_font)
     label_width = label_bbox[2] - label_bbox[0]
     
-    # Box dimensions
     box_padding = 80
     box_width = max(timer_width, label_width) + (box_padding * 2)
     box_height = timer_height + 150
     box_x = (width - box_width) // 2
     box_y = (height - box_height) // 2
     
-    # Draw rounded rectangle
     overlay_draw.rounded_rectangle(
         [(box_x, box_y), (box_x + box_width, box_y + box_height)],
         radius=40,
@@ -89,16 +133,11 @@ def create_countdown_frame(minutes, seconds, width=1920, height=1080,
 
 def create_countdown_video(duration=300, output_path="output/countdown.mp4", 
                           theme_path="backgrounds/forgiveness/countdown.jpg",
-                          fps=30, audio_path=None):
+                          fps=30, audio_path=None,
+                          church_name="Vernon United Methodist Church",
+                          logo_path=None):
     """
-    Create a countdown video using ffmpeg with optional background music.
-    
-    Args:
-        duration: Countdown duration in seconds (default 300 = 5 minutes)
-        output_path: Where to save the video
-        theme_path: Path to background image for color extraction
-        fps: Frames per second (30 recommended)
-        audio_path: Path to background audio file (mp3, wav, etc.)
+    Create a countdown video using ffmpeg with optional background music and church branding.
     """
     
     if not check_ffmpeg():
@@ -110,6 +149,10 @@ def create_countdown_video(duration=300, output_path="output/countdown.mp4",
         return False
     
     print(f"🎬 Creating {duration//60} minute countdown video...")
+    if church_name:
+        print(f"⛪ Church: {church_name}")
+    if logo_path:
+        print(f"🏛️ Logo: {logo_path}")
     
     # Load theme colors if background exists
     bg_color_top = (0, 120, 200)
@@ -118,7 +161,6 @@ def create_countdown_video(duration=300, output_path="output/countdown.mp4",
     if os.path.exists(theme_path):
         try:
             theme_img = Image.open(theme_path)
-            # Sample colors from top and bottom
             bg_color_top = theme_img.getpixel((theme_img.width // 2, 100))
             bg_color_bottom = theme_img.getpixel((theme_img.width // 2, theme_img.height - 100))
             print(f"🎨 Using theme colors from {theme_path}")
@@ -129,18 +171,19 @@ def create_countdown_video(duration=300, output_path="output/countdown.mp4",
     temp_dir = "temp_countdown_frames"
     os.makedirs(temp_dir, exist_ok=True)
     
-    print(f"📸 Generating {duration * fps} frames...")
+    print(f"📸 Generating frames...")
     
     frame_count = 0
     for remaining in range(duration, -1, -1):
         minutes = remaining // 60
         seconds = remaining % 60
         
-        # Generate one frame per second (repeat for fps)
         frame = create_countdown_frame(
             minutes, seconds, 
             bg_color_top=bg_color_top,
-            bg_color_bottom=bg_color_bottom
+            bg_color_bottom=bg_color_bottom,
+            church_name=church_name,
+            logo_path=logo_path
         )
         
         # Save frame multiple times for the desired fps
@@ -149,34 +192,50 @@ def create_countdown_video(duration=300, output_path="output/countdown.mp4",
             frame.save(frame_path, "JPEG", quality=95)
             frame_count += 1
         
-        if remaining % 30 == 0:  # Progress update every 30 seconds
+        if remaining % 30 == 0:
             print(f"  ⏱️  Generated up to {minutes:02d}:{seconds:02d}")
     
     print(f"✅ Generated {frame_count} frames")
     print(f"🎞️  Encoding video with ffmpeg...")
     
-    # Use ffmpeg to create video from frames
+    # Build ffmpeg command with optional audio
     ffmpeg_cmd = [
         'ffmpeg',
-        '-y',  # Overwrite output file
+        '-y',
         '-framerate', str(fps),
         '-i', os.path.join(temp_dir, 'frame_%06d.jpg'),
+    ]
+    
+    # Add audio if provided
+    if audio_path and os.path.exists(audio_path):
+        print(f"🎵 Adding background music: {audio_path}")
+        ffmpeg_cmd.extend([
+            '-i', audio_path,
+            '-t', str(duration),
+            '-c:a', 'aac',
+            '-b:a', '192k',
+            '-shortest',
+        ])
+    else:
+        if audio_path:
+            print(f"⚠️ Audio file not found: {audio_path}, creating video without audio")
+    
+    # Video encoding settings
+    ffmpeg_cmd.extend([
         '-c:v', 'libx264',
         '-preset', 'medium',
         '-crf', '23',
         '-pix_fmt', 'yuv420p',
         output_path
-    ]
+    ])
     
     try:
         subprocess.run(ffmpeg_cmd, check=True, capture_output=True)
         print(f"✅ Video created: {output_path}")
         
-        # Get file size
         size_mb = os.path.getsize(output_path) / (1024 * 1024)
         print(f"📦 File size: {size_mb:.1f} MB")
         
-        # Cleanup
         print("🧹 Cleaning up temporary frames...")
         shutil.rmtree(temp_dir)
         
@@ -185,73 +244,6 @@ def create_countdown_video(duration=300, output_path="output/countdown.mp4",
     except subprocess.CalledProcessError as e:
         print(f"❌ ffmpeg error: {e.stderr.decode()}")
         return False
-
-def create_countdown_gif(duration=300, output_path="output/countdown.gif"):
-    """
-    Create an animated GIF countdown (Warning: Large file size!)
-    
-    Args:
-        duration: Countdown duration in seconds
-        output_path: Where to save the GIF
-    """
-    
-    print(f"🎬 Creating {duration//60} minute countdown GIF...")
-    print("⚠️  Warning: GIF files can be very large!")
-    
-    frames = []
-    
-    for remaining in range(duration, -1, -1):
-        minutes = remaining // 60
-        seconds = remaining % 60
-        
-        frame = create_countdown_frame(minutes, seconds)
-        frames.append(frame)
-        
-        if remaining % 30 == 0:
-            print(f"  ⏱️  Generated up to {minutes:02d}:{seconds:02d}")
-    
-    print(f"💾 Saving GIF with {len(frames)} frames...")
-    
-    # Save as GIF (1 frame per second)
-    frames[0].save(
-        output_path,
-        save_all=True,
-        append_images=frames[1:],
-        duration=1000,  # 1000ms = 1 second per frame
-        loop=0
-    )
-    
-    size_mb = os.path.getsize(output_path) / (1024 * 1024)
-    print(f"✅ GIF created: {output_path}")
-    print(f"📦 File size: {size_mb:.1f} MB")
-    
-    return True
-
-def create_countdown_images(duration=300, output_dir="output/countdown_slides"):
-    """
-    Create individual countdown images (one per second) for manual slide creation
-    
-    Args:
-        duration: Countdown duration in seconds
-        output_dir: Directory to save images
-    """
-    
-    os.makedirs(output_dir, exist_ok=True)
-    print(f"🎬 Creating {duration//60} minute countdown images...")
-    
-    for remaining in range(duration, -1, -1):
-        minutes = remaining // 60
-        seconds = remaining % 60
-        
-        frame = create_countdown_frame(minutes, seconds)
-        output_path = os.path.join(output_dir, f"countdown_{minutes:02d}_{seconds:02d}.jpg")
-        frame.save(output_path, "JPEG", quality=95)
-        
-        if remaining % 30 == 0:
-            print(f"  ⏱️  Created {minutes:02d}:{seconds:02d}")
-    
-    print(f"✅ Created {duration + 1} images in {output_dir}")
-    return True
 
 def main():
     parser = argparse.ArgumentParser(description="Generate countdown timer for church slides")
@@ -265,6 +257,12 @@ def main():
                        help='Output path (default: output/countdown.[format])')
     parser.add_argument('--fps', type=int, default=30,
                        help='Frames per second for video (default: 30)')
+    parser.add_argument('--audio', type=str, default=None,
+                       help='Path to background audio file (mp3, wav, etc.)')
+    parser.add_argument('--church-name', type=str, default='Vernon United Methodist Church',
+                       help='Church name to display (default: Vernon United Methodist Church)')
+    parser.add_argument('--logo', type=str, default=None,
+                       help='Path to church logo image (PNG with transparency recommended)')
     
     args = parser.parse_args()
     
@@ -279,36 +277,71 @@ def main():
         else:
             output_path = 'output/countdown_slides'
     
-    # Ensure output directory exists
     os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else 'output', exist_ok=True)
     
-    # Theme background path
     theme_path = f"backgrounds/{args.theme}/countdown.jpg"
     
-    # Generate countdown based on format
+    # Handle audio
+    audio_path = args.audio
+    if not audio_path and args.format == 'mp4':
+        default_audio_paths = [
+            'audio/countdown_music.mp3',
+            'audio/church_music.mp3',
+            'audio/calm_piano.mp3',
+            'output/countdown_music.mp3'
+        ]
+        for path in default_audio_paths:
+            if os.path.exists(path):
+                audio_path = path
+                print(f"🎵 Found default audio: {audio_path}")
+                break
+    
+    # Handle logo
+    logo_path = args.logo
+    if not logo_path:
+        default_logo_paths = [
+            'logos/church_logo.png',
+            'logos/methodist_logo.png',
+            'logos/umc_logo.png',
+            'images/logo.png',
+            'assets/logo.png'
+        ]
+        for path in default_logo_paths:
+            if os.path.exists(path):
+                logo_path = path
+                print(f"🏛️ Found logo: {logo_path}")
+                break
+    
+    if logo_path and not os.path.exists(logo_path):
+        print(f"⚠️ Logo not found: {logo_path}")
+        logo_path = None
+    
+    # Generate countdown
     if args.format == 'mp4':
         success = create_countdown_video(
             duration=args.duration,
             output_path=output_path,
             theme_path=theme_path,
-            fps=args.fps
+            fps=args.fps,
+            audio_path=audio_path,
+            church_name=args.church_name,
+            logo_path=logo_path
         )
-    elif args.format == 'gif':
-        success = create_countdown_gif(
-            duration=args.duration,
-            output_path=output_path
-        )
-    else:  # images
-        success = create_countdown_images(
-            duration=args.duration,
-            output_dir=output_path
-        )
+    else:
+        print(f"❌ Format '{args.format}' not fully implemented with church branding yet")
+        print(f"   Use --format mp4 for now")
+        return
     
     if success:
         print("\n✅ Done!")
-        if args.format == 'mp4':
-            print(f"💡 Tip: You can embed this video in slide 1 of your PowerPoint")
-            print(f"   Insert > Video > Video on My PC... > {output_path}")
+        print(f"🎬 Video: {output_path}")
+        if audio_path:
+            print(f"🎵 Includes background music")
+        if logo_path:
+            print(f"🏛️ Includes church logo")
+        print(f"\n💡 To embed in PowerPoint:")
+        print(f"   The video will be automatically added to slide 1")
+        print(f"   python simple_convert.py 2025-06-22")
     else:
         print("\n❌ Failed to create countdown")
 

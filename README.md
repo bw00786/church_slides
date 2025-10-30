@@ -139,24 +139,32 @@ python simple_convert.py 2025-10-12
 
 ### 1. Generate Countdown Video (NEW!)
 
-Create a professional 5-minute countdown timer with optional calming music:
+Create a professional 5-minute countdown timer with church branding, logo, and optional calming music:
 
 ```bash
-# Generate MP4 countdown (recommended)
-python create_countdown.py --format mp4 --theme forgiveness
+# Generate MP4 countdown with church name and logo
+python create_countdown.py --format mp4 \
+  --church-name "Vernon United Methodist Church" \
+  --logo logos/methodist_logo.png \
+  --theme forgiveness
 
-# With background music
+# With background music (automatic if placed at audio/countdown_music.mp3)
 python create_countdown.py --format mp4 --audio audio/countdown_music.mp3
 
-# Custom duration (3 minutes) with music
-python create_countdown.py --format mp4 --duration 180 --audio path/to/music.mp3
+# Custom duration (3 minutes) with everything
+python create_countdown.py --format mp4 --duration 180 \
+  --church-name "Your Church Name" \
+  --logo logos/church_logo.png \
+  --audio path/to/music.mp3
 
-# Generate as animated GIF (Warning: large file size)
-python create_countdown.py --format gif
-
-# Generate individual images (one per second)
-python create_countdown.py --format images --output output/countdown_slides
+# Quick generation (uses defaults)
+python create_countdown.py --format mp4
 ```
+
+**Adding Church Branding:**
+1. Download your church logo (PNG with transparency recommended)
+2. Place at `logos/church_logo.png` or `logos/methodist_logo.png`
+3. See `LOGO_SETUP.md` for UMC Cross & Flame logo sources
 
 **Adding Music:**
 1. Download royalty-free music (see `AUDIO_SETUP.md` for sources)
@@ -165,6 +173,7 @@ python create_countdown.py --format images --output output/countdown_slides
 
 **Output:**
 - MP4 video: `output/countdown.mp4` (~5-10MB for 5 minutes)
+- Church name and logo at top
 - Theme-aware colors matching your backgrounds
 - 1920x1080 resolution at 30fps
 - Professional gradient background with rounded text box

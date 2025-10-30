@@ -54,5 +54,7 @@ order:
     title: Offering with Doxology
   - type: song
     title: Closing Praise
+    content: |
+      My House
   - type: dismissal
     title: Dismissal
