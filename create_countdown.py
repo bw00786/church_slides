@@ -1,12 +1,81 @@
+#!/usr/bin/env python3
+"""
+Generate a 5-minute countdown video for church service slides.
+Cross-platform compatible (Windows, Mac, Linux)
+
+Usage:
+    python create_countdown.py --format mp4 --theme forgiveness
+    python create_countdown.py --format gif --duration 300
+"""
+
 import os
+import sys
 import argparse
 from PIL import Image, ImageDraw, ImageFont
 import subprocess
 import shutil
 
+# Import cross-platform utilities
+try:
+    from path_utils import get_font_path, normalize_path, join_paths, ensure_directory
+except ImportError:
+    # Fallback if path_utils not available
+    def get_font_path():
+        if sys.platform == 'darwin':
+            return '/System/Library/Fonts/Supplemental/Arial.ttf'
+        elif sys.platform == 'win32':
+            return 'C:\\Windows\\Fonts\\arial.ttf'
+        else:
+            return '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+    
+    def normalize_path(p):
+        return os.path.normpath(p)
+    
+    def join_paths(*parts):
+        return os.path.join(*parts)
+    
+    def ensure_directory(p):
+        os.makedirs(p, exist_ok=True)
+
 def check_ffmpeg():
     """Check if ffmpeg is installed"""
     return shutil.which('ffmpeg') is not None
+
+def get_system_fonts():
+    """Get list of possible font paths for current system"""
+    if sys.platform == 'darwin':  # macOS
+        return [
+            '/System/Library/Fonts/Supplemental/Arial.ttf',
+            '/Library/Fonts/Arial.ttf',
+            '/System/Library/Fonts/Supplemental/Helvetica.ttc',
+        ]
+    elif sys.platform == 'win32':  # Windows
+        windows_fonts = os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts')
+        return [
+            os.path.join(windows_fonts, 'arial.ttf'),
+            os.path.join(windows_fonts, 'Arial.ttf'),
+            os.path.join(windows_fonts, 'ARIAL.TTF'),
+            'arial.ttf',  # Try current directory
+        ]
+    else:  # Linux
+        return [
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+            '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+            '/usr/share/fonts/truetype/msttcorefonts/Arial.ttf',
+        ]
+
+def load_font(size):
+    """Load font with fallback for different systems"""
+    font_paths = get_system_fonts()
+    
+    for font_path in font_paths:
+        try:
+            return ImageFont.truetype(font_path, size)
+        except:
+            continue
+    
+    print(f"⚠️ Using default font (Arial not found on {sys.platform})")
+    return ImageFont.load_default()
 
 def create_countdown_frame(minutes, seconds, width=1920, height=1080, 
                           bg_color_top=(0, 120, 200), bg_color_bottom=(0, 60, 130),
@@ -27,21 +96,10 @@ def create_countdown_frame(minutes, seconds, width=1920, height=1080,
         b = int(bg_color_top[2] * (1 - ratio) + bg_color_bottom[2] * ratio)
         draw.line([(0, i), (width, i)], fill=(r, g, b))
     
-    # Load fonts
-    try:
-        timer_font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 200)
-        label_font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 60)
-        church_font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 72)
-    except:
-        try:
-            timer_font = ImageFont.truetype("arial.ttf", 200)
-            label_font = ImageFont.truetype("arial.ttf", 60)
-            church_font = ImageFont.truetype("arial.ttf", 72)
-        except:
-            print("⚠️ Using default font (Arial not found)")
-            timer_font = ImageFont.load_default()
-            label_font = ImageFont.load_default()
-            church_font = ImageFont.load_default()
+    # Load fonts with cross-platform support
+    timer_font = load_font(200)
+    label_font = load_font(60)
+    church_font = load_font(72)
     
     # Format time string
     time_str = f"{minutes:02d}:{seconds:02d}"
@@ -51,49 +109,42 @@ def create_countdown_frame(minutes, seconds, width=1920, height=1080,
     draw = ImageDraw.Draw(img_rgba)
     
     # --- Add Church Logo (top center) ---
-    logo_bottom_y = 80  # Track where logo ends
+    logo_bottom_y = 80
     if logo_path and os.path.exists(logo_path):
         try:
             logo = Image.open(logo_path)
-            # Resize logo to reasonable size (max 250px wide)
             logo_max_width = 250
             logo_aspect = logo.height / logo.width
             if logo.width > logo_max_width:
                 logo = logo.resize((logo_max_width, int(logo_max_width * logo_aspect)), Image.Resampling.LANCZOS)
             
-            # Convert logo to RGBA if not already
             if logo.mode != 'RGBA':
                 logo = logo.convert('RGBA')
             
-            # Position logo at top center
             logo_x = (width - logo.width) // 2
             logo_y = 80
             logo_bottom_y = logo_y + logo.height
             
-            # Paste logo
             img_rgba.paste(logo, (logo_x, logo_y), logo)
-            draw = ImageDraw.Draw(img_rgba)  # Refresh draw object
+            draw = ImageDraw.Draw(img_rgba)
             
         except Exception as e:
             print(f"   ⚠️ Could not load logo: {e}")
     
-    # --- Draw Church Name (below logo or at top) ---
-    church_y = logo_bottom_y + 30  # Position below logo
+    # --- Draw Church Name ---
+    church_y = logo_bottom_y + 30
     if church_name:
         church_bbox = draw.textbbox((0, 0), church_name, font=church_font)
         church_width = church_bbox[2] - church_bbox[0]
         church_x = (width - church_width) // 2
         
-        # Draw church name with shadow
         draw.text((church_x + 3, church_y + 3), church_name, fill=(0, 0, 0, 180), font=church_font)
         draw.text((church_x, church_y), church_name, fill=text_color + (255,), font=church_font)
     
-    # --- Draw countdown section (center of screen) ---
-    # Draw translucent rounded rectangle behind countdown
+    # --- Draw countdown section ---
     overlay = Image.new("RGBA", img_rgba.size, (0, 0, 0, 0))
     overlay_draw = ImageDraw.Draw(overlay)
     
-    # Calculate countdown box position (center of screen)
     timer_bbox = draw.textbbox((0, 0), time_str, font=timer_font)
     timer_width = timer_bbox[2] - timer_bbox[0]
     timer_height = timer_bbox[3] - timer_bbox[1]
@@ -117,7 +168,7 @@ def create_countdown_frame(minutes, seconds, width=1920, height=1080,
     img_rgba = Image.alpha_composite(img_rgba, overlay)
     draw = ImageDraw.Draw(img_rgba)
     
-    # Draw label text
+    # Draw label
     label_x = (width - label_width) // 2
     label_y = box_y + 30
     draw.text((label_x + 3, label_y + 3), label_text, fill=(0, 0, 0, 180), font=label_font)
@@ -136,28 +187,32 @@ def create_countdown_video(duration=300, output_path="output/countdown.mp4",
                           fps=30, audio_path=None,
                           church_name="Vernon United Methodist Church",
                           logo_path=None):
-    """
-    Create a countdown video using ffmpeg with optional background music and church branding.
-    """
+    """Create countdown video - cross-platform compatible"""
     
     if not check_ffmpeg():
         print("❌ ffmpeg not found!")
         print("Install with:")
-        print("  macOS: brew install ffmpeg")
-        print("  Linux: sudo apt-get install ffmpeg")
-        print("  Windows: Download from https://ffmpeg.org/")
+        if sys.platform == 'darwin':
+            print("  macOS: brew install ffmpeg")
+        elif sys.platform == 'win32':
+            print("  Windows: Download from https://ffmpeg.org/download.html")
+            print("           Or use: winget install ffmpeg")
+        else:
+            print("  Linux: sudo apt-get install ffmpeg")
         return False
     
     print(f"🎬 Creating {duration//60} minute countdown video...")
+    print(f"💻 Platform: {sys.platform}")
     if church_name:
         print(f"⛪ Church: {church_name}")
     if logo_path:
         print(f"🏛️ Logo: {logo_path}")
     
-    # Load theme colors if background exists
+    # Load theme colors
     bg_color_top = (0, 120, 200)
     bg_color_bottom = (0, 60, 130)
     
+    theme_path = normalize_path(theme_path)
     if os.path.exists(theme_path):
         try:
             theme_img = Image.open(theme_path)
@@ -167,9 +222,9 @@ def create_countdown_video(duration=300, output_path="output/countdown.mp4",
         except:
             print(f"⚠️ Could not load theme, using default colors")
     
-    # Create temporary directory for frames
-    temp_dir = "temp_countdown_frames"
-    os.makedirs(temp_dir, exist_ok=True)
+    # Create temp directory with OS-appropriate path
+    temp_dir = normalize_path("temp_countdown_frames")
+    ensure_directory(temp_dir)
     
     print(f"📸 Generating frames...")
     
@@ -186,9 +241,8 @@ def create_countdown_video(duration=300, output_path="output/countdown.mp4",
             logo_path=logo_path
         )
         
-        # Save frame multiple times for the desired fps
         for _ in range(fps):
-            frame_path = os.path.join(temp_dir, f"frame_{frame_count:06d}.jpg")
+            frame_path = join_paths(temp_dir, f"frame_{frame_count:06d}.jpg")
             frame.save(frame_path, "JPEG", quality=95)
             frame_count += 1
         
@@ -198,17 +252,19 @@ def create_countdown_video(duration=300, output_path="output/countdown.mp4",
     print(f"✅ Generated {frame_count} frames")
     print(f"🎞️  Encoding video with ffmpeg...")
     
-    # Build ffmpeg command with optional audio
+    # Build ffmpeg command
+    frame_pattern = join_paths(temp_dir, 'frame_%06d.jpg')
+    
     ffmpeg_cmd = [
         'ffmpeg',
         '-y',
         '-framerate', str(fps),
-        '-i', os.path.join(temp_dir, 'frame_%06d.jpg'),
+        '-i', frame_pattern,
     ]
     
-    # Add audio if provided
     if audio_path and os.path.exists(audio_path):
         print(f"🎵 Adding background music: {audio_path}")
+        audio_path = normalize_path(audio_path)
         ffmpeg_cmd.extend([
             '-i', audio_path,
             '-t', str(duration),
@@ -216,11 +272,8 @@ def create_countdown_video(duration=300, output_path="output/countdown.mp4",
             '-b:a', '192k',
             '-shortest',
         ])
-    else:
-        if audio_path:
-            print(f"⚠️ Audio file not found: {audio_path}, creating video without audio")
     
-    # Video encoding settings
+    output_path = normalize_path(output_path)
     ffmpeg_cmd.extend([
         '-c:v', 'libx264',
         '-preset', 'medium',
@@ -242,53 +295,39 @@ def create_countdown_video(duration=300, output_path="output/countdown.mp4",
         return True
         
     except subprocess.CalledProcessError as e:
-        print(f"❌ ffmpeg error: {e.stderr.decode()}")
+        print(f"❌ ffmpeg error: {e.stderr.decode() if e.stderr else 'Unknown error'}")
         return False
 
 def main():
     parser = argparse.ArgumentParser(description="Generate countdown timer for church slides")
-    parser.add_argument('--format', choices=['mp4', 'gif', 'images'], default='mp4',
-                       help='Output format (default: mp4)')
-    parser.add_argument('--duration', type=int, default=300,
-                       help='Countdown duration in seconds (default: 300 = 5 minutes)')
-    parser.add_argument('--theme', type=str, default='forgiveness',
-                       help='Theme name for background colors (default: forgiveness)')
-    parser.add_argument('--output', type=str, default=None,
-                       help='Output path (default: output/countdown.[format])')
-    parser.add_argument('--fps', type=int, default=30,
-                       help='Frames per second for video (default: 30)')
-    parser.add_argument('--audio', type=str, default=None,
-                       help='Path to background audio file (mp3, wav, etc.)')
-    parser.add_argument('--church-name', type=str, default='Vernon United Methodist Church',
-                       help='Church name to display (default: Vernon United Methodist Church)')
-    parser.add_argument('--logo', type=str, default=None,
-                       help='Path to church logo image (PNG with transparency recommended)')
+    parser.add_argument('--format', choices=['mp4', 'gif', 'images'], default='mp4')
+    parser.add_argument('--duration', type=int, default=300)
+    parser.add_argument('--theme', type=str, default='forgiveness')
+    parser.add_argument('--output', type=str, default=None)
+    parser.add_argument('--fps', type=int, default=30)
+    parser.add_argument('--audio', type=str, default=None)
+    parser.add_argument('--church-name', type=str, default='Vernon United Methodist Church')
+    parser.add_argument('--logo', type=str, default=None)
     
     args = parser.parse_args()
     
     # Determine output path
     if args.output:
-        output_path = args.output
+        output_path = normalize_path(args.output)
     else:
-        if args.format == 'mp4':
-            output_path = 'output/countdown.mp4'
-        elif args.format == 'gif':
-            output_path = 'output/countdown.gif'
-        else:
-            output_path = 'output/countdown_slides'
+        output_path = join_paths('output', 'countdown.mp4')
     
-    os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else 'output', exist_ok=True)
+    ensure_directory(os.path.dirname(output_path) if os.path.dirname(output_path) else 'output')
     
-    theme_path = f"backgrounds/{args.theme}/countdown.jpg"
+    theme_path = join_paths('backgrounds', args.theme, 'countdown.jpg')
     
     # Handle audio
     audio_path = args.audio
-    if not audio_path and args.format == 'mp4':
+    if not audio_path:
         default_audio_paths = [
-            'audio/countdown_music.mp3',
-            'audio/church_music.mp3',
-            'audio/calm_piano.mp3',
-            'output/countdown_music.mp3'
+            join_paths('audio', 'countdown_music.mp3'),
+            join_paths('audio', 'church_music.mp3'),
+            join_paths('audio', 'calm_piano.mp3'),
         ]
         for path in default_audio_paths:
             if os.path.exists(path):
@@ -300,11 +339,9 @@ def main():
     logo_path = args.logo
     if not logo_path:
         default_logo_paths = [
-            'logos/church_logo.png',
-            'logos/methodist_logo.png',
-            'logos/umc_logo.png',
-            'images/logo.png',
-            'assets/logo.png'
+            join_paths('logos', 'church_logo.png'),
+            join_paths('logos', 'methodist_logo.png'),
+            join_paths('logos', 'umc_logo.png'),
         ]
         for path in default_logo_paths:
             if os.path.exists(path):
@@ -317,20 +354,15 @@ def main():
         logo_path = None
     
     # Generate countdown
-    if args.format == 'mp4':
-        success = create_countdown_video(
-            duration=args.duration,
-            output_path=output_path,
-            theme_path=theme_path,
-            fps=args.fps,
-            audio_path=audio_path,
-            church_name=args.church_name,
-            logo_path=logo_path
-        )
-    else:
-        print(f"❌ Format '{args.format}' not fully implemented with church branding yet")
-        print(f"   Use --format mp4 for now")
-        return
+    success = create_countdown_video(
+        duration=args.duration,
+        output_path=output_path,
+        theme_path=theme_path,
+        fps=args.fps,
+        audio_path=audio_path,
+        church_name=args.church_name,
+        logo_path=logo_path
+    )
     
     if success:
         print("\n✅ Done!")
@@ -339,9 +371,6 @@ def main():
             print(f"🎵 Includes background music")
         if logo_path:
             print(f"🏛️ Includes church logo")
-        print(f"\n💡 To embed in PowerPoint:")
-        print(f"   The video will be automatically added to slide 1")
-        print(f"   python simple_convert.py 2025-06-22")
     else:
         print("\n❌ Failed to create countdown")
 
